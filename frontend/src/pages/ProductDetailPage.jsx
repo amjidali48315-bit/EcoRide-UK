@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import axios from './axiosConfig';
 import { useCustomer } from '../context/CustomerContext';
 
 const imgSrc = (image) => {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import axios from './axiosConfig';
 import { useCustomer } from '../context/CustomerContext';
 
 export default function CheckoutPage() {

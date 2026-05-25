@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import axios from 'axios';
+import axios from '../axiosConfig';
 
 const cfg = { withCredentials: true };
 

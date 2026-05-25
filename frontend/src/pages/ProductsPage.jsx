@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from './axiosConfig';
 
 const ALL_CATS = [
   { value: 'all',         label: 'All Products' },

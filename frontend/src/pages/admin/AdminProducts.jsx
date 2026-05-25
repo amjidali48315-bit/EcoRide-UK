@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import axios from '../axiosConfig';
 
 const EMPTY = {
   name: '', category: 'E-Scooter', price: '', cost_price: '',

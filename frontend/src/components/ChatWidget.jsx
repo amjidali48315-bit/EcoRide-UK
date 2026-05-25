@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import axios from 'axios';
+import axios from './axiosConfig';
 import { useCustomer } from '../context/CustomerContext';
 
 const STORAGE_KEY = 'ecr_chat_id';
