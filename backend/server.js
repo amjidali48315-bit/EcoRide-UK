@@ -27,7 +27,7 @@ app.use(session({
     maxAge:   1000 * 60 * 60 * 24 * 7, // 7 days — keeps admin logged in longer
     secure:   process.env.NODE_ENV === 'production', // HTTPS only in production
     httpOnly: true,   // JS cannot read this cookie — prevents XSS theft
-    sameSite: 'lax',
+    sameSite: 'none',
   },
 }));
 
