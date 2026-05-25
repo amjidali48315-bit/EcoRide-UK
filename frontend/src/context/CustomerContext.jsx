@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import axios from './axiosConfig';
+import axios from '../axiosConfig';
 
 const CustomerContext = createContext(null);
 
