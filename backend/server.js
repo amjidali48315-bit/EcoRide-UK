@@ -7,8 +7,10 @@ require('dotenv').config();
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 app.use(cors({
-  origin: true,
+  origin: process.env.CLIENT_URL || 'https://eco-ride-uk-frontend.vercel.app',
   credentials: true,
 }));
 
@@ -24,9 +26,9 @@ app.use(session({
   saveUninitialized: false,
   store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
   cookie: {
-    maxAge:   1000 * 60 * 60 * 24 * 7, // 7 days — keeps admin logged in longer
-    secure:   process.env.NODE_ENV === 'production', // HTTPS only in production
-    httpOnly: true,   // JS cannot read this cookie — prevents XSS theft
+    maxAge:   1000 * 60 * 60 * 24 * 7,
+    secure:   true,
+    httpOnly: true,
     sameSite: 'none',
   },
 }));
