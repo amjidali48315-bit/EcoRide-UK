@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from './axiosConfig';
+import axios from '../axiosConfig';
 import { useCustomer } from '../context/CustomerContext';
 
 const STEPS = ['Pending', 'Assigned', 'Dispatched', 'Delivered'];

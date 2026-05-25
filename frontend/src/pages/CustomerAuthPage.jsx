@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from './axiosConfig';
+import axios from '../axiosConfig';
 import { useCustomer } from '../context/CustomerContext';
 
 const EyeIcon = ({ open }) =>
