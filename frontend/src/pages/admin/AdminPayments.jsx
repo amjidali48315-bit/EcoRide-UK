@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import axios from '../axiosConfig';
+import axios from '../../axiosConfig';
 
 const fmtMoney = n => `£${Number(n || 0).toFixed(2)}`;
 const fmtDate  = d => d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';

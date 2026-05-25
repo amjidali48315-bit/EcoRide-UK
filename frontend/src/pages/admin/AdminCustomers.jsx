@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import axios from '../axiosConfig';
+import axios from '../../axiosConfig';
 
 export default function AdminCustomers() {
   const [customers, setCustomers] = useState([]);

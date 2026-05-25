@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useDriver } from '../../context/DriverContext';
-import axios from '../axiosConfig';
+import axios from '../../axiosConfig';
 
 const fmtDate = d => d
   ? new Date(d).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })

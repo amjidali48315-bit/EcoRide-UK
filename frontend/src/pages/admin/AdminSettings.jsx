@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import axios from '../axiosConfig';
+import axios from '../../axiosConfig';
 
 const DEFAULTS = {
   banner_title:    'Premium Ride. Local UK Delivery.',

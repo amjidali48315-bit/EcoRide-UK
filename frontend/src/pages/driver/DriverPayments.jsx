@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useDriver } from '../../context/DriverContext';
-import axios from '../axiosConfig';
+import axios from '../../axiosConfig';
 
 const fmtMoney = n => `£${Number(n || 0).toFixed(2)}`;
 const fmtDate  = d => d

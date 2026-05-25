@@ -887,10 +887,10 @@ export default function HomePage() {
   useEffect(() => { document.title = 'EcoRide UK — Premium E-Scooters & E-Bikes'; }, []);
 
   useEffect(() => {
-    axios.get('/api/products').then(r => setProducts(r.data)).catch(console.error).finally(() => setLoading(false));
+    axios.get('/api/products').then(r => setProducts(Array.isArray(r.data) ? r.data : [])).catch(console.error).finally(() => setLoading(false));
     axios.get('/api/reviews/summary').then(r => setReviewMap(r.data)).catch(() => {});
-    axios.get('/api/offers').then(r => setOffers(r.data)).catch(console.error);
-    axios.get('/api/videos').then(r => setVideos(r.data)).catch(console.error);
+    axios.get('/api/offers').then(r => setOffers(Array.isArray(r.data) ? r.data : [])).catch(console.error);
+    axios.get('/api/videos').then(r => setVideos(Array.isArray(r.data) ? r.data : [])).catch(console.error);
   }, []);
 
   const filtered   = category === 'all' ? products : products.filter(p => p.category === category);

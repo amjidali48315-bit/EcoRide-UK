@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from '../axiosConfig';
+import axios from '../../axiosConfig';
 
 const cfg = { withCredentials: true };
 const lbl = { display: 'block', color: '#aaa', fontSize: '0.8rem', fontWeight: 600, marginBottom: 5 };

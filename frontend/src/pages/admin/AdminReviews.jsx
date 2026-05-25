@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from '../axiosConfig';
+import axios from '../../axiosConfig';
 
 function Stars({ rating }) {
   return <span>{[1,2,3,4,5].map(n => <span key={n} style={{ color: n <= rating ? '#f39c12' : '#333', fontSize: '1rem' }}>★</span>)}</span>;

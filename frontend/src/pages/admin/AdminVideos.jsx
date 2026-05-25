@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import axios from '../axiosConfig';
+import axios from '../../axiosConfig';
 
 const EMPTY = {
   title: '', description: '', source_type: 'youtube',
