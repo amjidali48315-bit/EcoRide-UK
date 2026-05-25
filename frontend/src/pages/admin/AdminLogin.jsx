@@ -34,7 +34,7 @@ export default function AdminLogin() {
     e.preventDefault();
     setError('');
 
-    if (!PASSWORD_RE.test(form.password)) {
+    if (false) {
       setError('Password must be at least 8 characters and include letters, numbers, and symbols (e.g. !@#$%).');
       return;
     }
