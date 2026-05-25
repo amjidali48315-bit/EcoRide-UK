@@ -1,35 +1,9 @@
 const router  = require('express').Router();
-const path    = require('path');
-const fs      = require('fs');
-const multer  = require('multer');
 const Product = require('../models/Product');
 const { requireAdmin } = require('../middleware/authMiddleware');
+const { createUploader, deleteImage } = require('../utils/cloudinary');
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const dir = path.join(__dirname, '..', 'public', 'images', 'products');
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
-  },
-  filename: (req, file, cb) => {
-    const ext  = path.extname(file.originalname).toLowerCase();
-    const base = path.basename(file.originalname, ext).replace(/[^a-z0-9]/gi, '-');
-    cb(null, `product-${Date.now()}-${base}${ext}`);
-  },
-});
-
-const fileFilter = (req, file, cb) => {
-  const allowed = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
-  const ext = path.extname(file.originalname).toLowerCase();
-  if (allowed.includes(ext)) cb(null, true);
-  else cb(new Error('Only image files are allowed.'));
-};
-
-const upload = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 },
-}).single('image_file');
+const upload = createUploader('ecoride-products').single('image_file');
 
 const handleUpload = (req, res, next) => {
   upload(req, res, (err) => {
@@ -37,6 +11,7 @@ const handleUpload = (req, res, next) => {
     next();
   });
 };
+
 
 router.get('/', async (req, res) => {
   try {
@@ -73,7 +48,7 @@ router.post('/', requireAdmin, handleUpload, async (req, res) => {
     }
 
     let image = '';
-    if (req.file) image = `/images/products/${req.file.filename}`;
+    if (req.file) image = req.file.path;
 
     let specs = {};
     if (rawSpecs) { try { specs = JSON.parse(rawSpecs); } catch { specs = {}; } }
@@ -132,7 +107,7 @@ router.put('/:id', requireAdmin, handleUpload, async (req, res) => {
     }
 
     if (req.file) {
-      update.image = `/images/products/${req.file.filename}`;
+      update.image = req.file.path;
       if (existing.image && existing.image.startsWith('/images/products/')) {
         const oldPath = path.join(__dirname, '..', 'public', existing.image);
         fs.unlink(oldPath, () => {});
