@@ -1,4 +1,4 @@
-const cloudinary = require('cloudinary').v2;
+const cloudinary = require('cloudinary');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const multer = require('multer');
 
@@ -14,7 +14,6 @@ const createUploader = (folder) => {
     params: {
       folder,
       allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
-      transformation: [{ quality: 'auto', fetch_format: 'auto' }],
     },
   });
   return multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
@@ -26,7 +25,7 @@ const deleteImage = async (url) => {
     const parts = url.split('/');
     const filename = parts[parts.length - 1].split('.')[0];
     const folder = parts[parts.length - 2];
-    await cloudinary.uploader.destroy(`${folder}/${filename}`);
+    await cloudinary.v2.uploader.destroy(`${folder}/${filename}`);
   } catch (e) {}
 };
 
