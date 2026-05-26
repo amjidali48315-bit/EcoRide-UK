@@ -1,18 +1,42 @@
 const router  = require('express').Router();
+const path    = require('path');
+const fs      = require('fs');
+const multer  = require('multer');
 const Offer   = require('../models/Offer');
 const Product = require('../models/Product');
 const { requireAdmin } = require('../middleware/authMiddleware');
-const { createUploader, deleteImage } = require('../utils/cloudinary');
 
-const upload = createUploader('ecoride-offers').single('image_file');
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, '..', 'public', 'images', 'offers');
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext  = path.extname(file.originalname).toLowerCase();
+    const base = path.basename(file.originalname, ext).replace(/[^a-z0-9]/gi, '-');
+    cb(null, `offer-${Date.now()}-${base}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
+    if (allowed.includes(path.extname(file.originalname).toLowerCase())) cb(null, true);
+    else cb(new Error('Images only (jpg, png, webp, gif).'));
+  },
+  limits: { fileSize: 8 * 1024 * 1024 },
+});
 
 const handleUpload = (req, res, next) => {
-  upload(req, res, (err) => {
+  upload.single('image_file')(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message });
     next();
   });
 };
 
+async function deleteLinkedProduct(productId) {
   if (!productId) return;
   try {
     const product = await Product.findByIdAndDelete(productId);
