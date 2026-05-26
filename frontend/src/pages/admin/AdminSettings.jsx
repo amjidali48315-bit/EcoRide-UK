@@ -74,14 +74,43 @@ export default function AdminSettings() {
   const [showNew, setShowNew]         = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
+
+  // ── Change Username ────────────────────────────────────────────────────
+  const [unForm, setUnForm] = useState({ new_username: '', current_password: '' });
+  const [unMsg,  setUnMsg]  = useState('');
+  const [unErr,  setUnErr]  = useState('');
+  const [unSaving, setUnSaving] = useState(false);
+  const setUn = f => e => setUnForm(p => ({ ...p, [f]: e.target.value }));
+
+  const changeUsername = async (e) => {
+    e.preventDefault();
+    setUnErr(''); setUnMsg('');
+    if (!unForm.new_username.trim()) { setUnErr('Please enter a new username.'); return; }
+    if (!unForm.current_password)    { setUnErr('Please enter your current password.'); return; }
+    setUnSaving(true);
+    try {
+      const r = await axios.put('/api/admin/change-username', {
+        new_username:     unForm.new_username.trim(),
+        current_password: unForm.current_password,
+      }, { withCredentials: true });
+      setUnMsg('Username changed! Please log out and log in again with your new username.');
+      setUnForm({ new_username: '', current_password: '' });
+      if (r.data.token) localStorage.setItem('admin_token', r.data.token);
+      setTimeout(() => { setUnMsg(''); }, 6000);
+    } catch (err) {
+      setUnErr(err.response?.data?.error || 'Failed to change username.');
+      setTimeout(() => { setUnErr(''); }, 5000);
+    } finally { setUnSaving(false); }
+  };
+
   const setPw = f => e => setPwForm(p => ({ ...p, [f]: e.target.value }));
 
   const changePassword = async (e) => {
     e.preventDefault();
     setPwErr(''); setPwMsg('');
 
-    if (!PASSWORD_RE.test(pwForm.new_password)) {
-      setPwErr('New password must be at least 8 characters and include letters, numbers, and symbols (e.g. !@#$%).');
+    if (pwForm.new_password.length < 6) {
+      setPwErr('New password must be at least 6 characters.');
       return;
     }
     if (pwForm.new_password !== pwForm.confirm_password) {
@@ -339,6 +368,38 @@ export default function AdminSettings() {
                 </div>
               ))}
             </div>
+          </div>
+
+
+          {/* ── Change Username ──────────────────────────────────────── */}
+          <div style={card}>
+            <h3 style={{ color: '#fff', marginBottom: 6 }}>Change Username</h3>
+            <p style={{ color: '#666', fontSize: '0.82rem', marginBottom: 20 }}>
+              Update your admin login username. You will need your current password to confirm.
+            </p>
+            {unMsg && (
+              <div style={{ background: '#0d2e1a', border: '1px solid #2ecc7144', borderRadius: 8, padding: '10px 14px', color: '#2ecc71', marginBottom: 14, fontSize: '0.88rem' }}>
+                {unMsg}
+              </div>
+            )}
+            {unErr && (
+              <div style={{ background: '#2e0d0d', border: '1px solid #e74c3c44', borderRadius: 8, padding: '10px 14px', color: '#e74c3c', marginBottom: 14, fontSize: '0.88rem' }}>
+                {unErr}
+              </div>
+            )}
+            <form onSubmit={changeUsername}>
+              <div style={{ marginBottom: 14 }}>
+                <label style={lbl}>New Username</label>
+                <input style={inp} type="text" value={unForm.new_username} onChange={setUn('new_username')} placeholder="Enter new username" required />
+              </div>
+              <div style={{ marginBottom: 20 }}>
+                <label style={lbl}>Current Password (to confirm)</label>
+                <input style={inp} type="password" value={unForm.current_password} onChange={setUn('current_password')} placeholder="Enter your current password" required />
+              </div>
+              <button type="submit" disabled={unSaving} style={{ padding: '11px 28px', background: unSaving ? '#1a3a5c' : '#3498db', border: 'none', color: '#fff', fontWeight: 700, borderRadius: 8, cursor: unSaving ? 'not-allowed' : 'pointer', fontSize: '0.9rem' }}>
+                {unSaving ? 'Changing...' : 'Change Username'}
+              </button>
+            </form>
           </div>
 
           {/* ── Change Password ──────────────────────────────────────── */}

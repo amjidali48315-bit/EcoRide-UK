@@ -1,13 +1,6 @@
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'escooter_jwt_secret';
 
-
-function requireAdmin(req, res, next) {
-  if (req.session?.admin_logged_in) return next();
-  return res.status(401).json({ error: 'Admin authentication required.' });
-}
-
-
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
 }
@@ -20,6 +13,23 @@ function extractBearer(req) {
   const auth = req.headers.authorization;
   if (auth && auth.startsWith('Bearer ')) return auth.slice(7);
   return null;
+}
+
+function requireAdmin(req, res, next) {
+  // Check JWT token first
+  const token = extractBearer(req);
+  if (token) {
+    try {
+      const decoded = verifyToken(token);
+      if (decoded.role === 'admin') {
+        req.admin = decoded;
+        return next();
+      }
+    } catch {}
+  }
+  // Fall back to session
+  if (req.session?.admin_logged_in) return next();
+  return res.status(401).json({ error: 'Admin authentication required.' });
 }
 
 function requireCustomer(req, res, next) {
@@ -48,4 +58,4 @@ function requireDriver(req, res, next) {
   }
 }
 
-module.exports = { requireAdmin, requireCustomer, requireDriver, signToken };
+module.exports = { requireAdmin, requireCustomer, requireDriver, signToken, verifyToken, extractBearer };
