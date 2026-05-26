@@ -8,7 +8,7 @@ cloudinaryV2.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const createUploader = (folder) => {
+const createUploader = (folder, maxCount = 1) => {
   const storage = new CloudinaryStorage({
     cloudinary: cloudinaryV2,
     params: {
@@ -16,7 +16,8 @@ const createUploader = (folder) => {
       allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
     },
   });
-  return multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+  const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+  return maxCount === 1 ? upload.single('image_file') : upload.array('image_files', maxCount);
 };
 
 const deleteImage = async (url) => {
@@ -29,4 +30,4 @@ const deleteImage = async (url) => {
   } catch (e) {}
 };
 
-module.exports = { createUploader, deleteImage };
+module.exports = { createUploader, deleteImage, cloudinaryV2 };

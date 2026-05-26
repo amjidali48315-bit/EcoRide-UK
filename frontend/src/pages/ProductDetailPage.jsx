@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from '../axiosConfig';
 import { useCustomer } from '../context/CustomerContext';
@@ -6,7 +6,7 @@ import { useCustomer } from '../context/CustomerContext';
 const imgSrc = (image) => {
   if (!image) return null;
   if (image.startsWith('http')) return image;
-  return image; // relative path — proxied correctly on both desktop and mobile
+  return image;
 };
 
 function QuantityPicker({ price, maxStock, qty, setQty }) {
@@ -29,25 +29,21 @@ export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCustomer();
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [imgError, setImgError] = useState(false);
-  const [qty, setQty] = useState(1);
-  const [cartMsg, setCartMsg] = useState('');
-  const [reviews, setReviews] = useState([]);
+  const [product,    setProduct]    = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [activeImg,  setActiveImg]  = useState(0);
+  const [qty,        setQty]        = useState(1);
+  const [cartMsg,    setCartMsg]    = useState('');
+  const [reviews,    setReviews]    = useState([]);
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [id]);
+  useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, [id]);
 
   useEffect(() => {
     axios.get(`/api/products/${id}`)
-      .then(r => setProduct(r.data))
+      .then(r => { setProduct(r.data); setActiveImg(0); })
       .catch(() => navigate('/products'))
       .finally(() => setLoading(false));
-    axios.get(`/api/reviews/product/${id}`)
-      .then(r => setReviews(r.data))
-      .catch(() => {});
+    axios.get(`/api/reviews/product/${id}`).then(r => setReviews(r.data)).catch(() => {});
   }, [id, navigate]);
 
   const handleAddToCart = async () => {
@@ -63,20 +59,25 @@ export default function ProductDetailPage() {
     ? Object.values(product.stock_by_city).reduce((s, v) => s + (Number(v) || 0), 0)
     : (product.stock || 0);
   const specs = product.specs ? Object.entries(product.specs) : [];
-  const image = imgSrc(product.image);
+
+  // Build images array
+  const allImages = (product.images && product.images.length > 0)
+    ? product.images
+    : (product.image ? [product.image] : []);
+  const currentImage = allImages[activeImg] ? imgSrc(allImages[activeImg]) : null;
 
   return (
     <>
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '40px 20px' }}>
 
-      {/* Image */}
+      {/* Main Image */}
       <div style={{
-        width: '100%', borderRadius: 16, overflow: 'hidden', marginBottom: 32,
+        width: '100%', borderRadius: 16, overflow: 'hidden', marginBottom: 12,
         background: '#1a1a2e', border: '1px solid #2a2a4a',
         display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 320,
       }}>
-        {image && !imgError ? (
-          <img src={image} alt={product.name} onError={() => setImgError(true)}
+        {currentImage ? (
+          <img src={currentImage} alt={product.name}
             style={{ width: '100%', maxHeight: 480, objectFit: 'cover', display: 'block' }} />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 60, color: '#555' }}>
@@ -84,6 +85,23 @@ export default function ProductDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Thumbnail Gallery */}
+      {allImages.length > 1 && (
+        <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+          {allImages.map((img, idx) => (
+            <div key={idx} onClick={() => setActiveImg(idx)}
+              style={{
+                width: 70, height: 70, borderRadius: 10, overflow: 'hidden', cursor: 'pointer',
+                border: `2px solid ${activeImg === idx ? '#2ecc71' : '#2a2a4a'}`,
+                background: '#111', flexShrink: 0,
+              }}>
+              <img src={imgSrc(img)} alt={`view ${idx + 1}`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Details */}
       <div style={{ background: '#1a1a2e', borderRadius: 16, padding: 28, border: '1px solid #2a2a4a' }}>
@@ -167,13 +185,11 @@ export default function ProductDetailPage() {
       </div>
     </div>
 
-    {/* ── Customer Reviews ───────────────────────────────────────── */}
+    {/* Reviews */}
     <div style={{ maxWidth: 800, margin: '32px auto 0', padding: '0 20px 48px' }}>
       <div style={{ borderTop: '1px solid #2a2a4a', paddingTop: 28 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
-          <h2 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>
-            Customer Reviews
-          </h2>
+          <h2 style={{ color: '#fff', fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>Customer Reviews</h2>
           {reviews.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ letterSpacing: 2 }}>
@@ -200,10 +216,7 @@ export default function ProductDetailPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {reviews.map(r => (
-            <div key={r._id} style={{
-              background: '#1a1a2e', border: '1px solid #2a2a4a',
-              borderRadius: 12, padding: '16px 18px',
-            }}>
+            <div key={r._id} style={{ background: '#1a1a2e', border: '1px solid #2a2a4a', borderRadius: 12, padding: '16px 18px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                 <div>
                   <span style={{ color: '#fff', fontWeight: 600, fontSize: '0.9rem' }}>{r.name}</span>

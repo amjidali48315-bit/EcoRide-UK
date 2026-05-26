@@ -9,17 +9,17 @@ const EMPTY = {
 const imgSrc = i => { if (!i) return null; if (i.startsWith('http')) return i; return i; };
 
 export default function AdminProducts() {
-  const [products,     setProducts]     = useState([]);
-  const [cities,       setCities]       = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [form,         setForm]         = useState(EMPTY);
-  const [stockByCity,  setStockByCity]  = useState({});
-  const [editing,      setEditing]      = useState(null);
-  const [imageFile,    setImageFile]    = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
-  const [msg,          setMsg]          = useState('');
-  const [err,          setErr]          = useState('');
-  const [saving,       setSaving]       = useState(false);
+  const [products,      setProducts]      = useState([]);
+  const [cities,        setCities]        = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [form,          setForm]          = useState(EMPTY);
+  const [stockByCity,   setStockByCity]   = useState({});
+  const [editing,       setEditing]       = useState(null);
+  const [imageFiles,    setImageFiles]    = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [msg,           setMsg]           = useState('');
+  const [err,           setErr]           = useState('');
+  const [saving,        setSaving]        = useState(false);
   const fileRef = useRef();
 
   const load = () => {
@@ -65,24 +65,30 @@ export default function AdminProducts() {
       badge: p.badge || '', specs: specsToText(p.specs),
     });
     const existing = (p.stock_by_city && typeof p.stock_by_city === 'object') ? p.stock_by_city : {};
-    if (Object.keys(existing).length === 0) {
-      const m = {};
-      if (p.stock_london > 0)     m['London']     = p.stock_london;
-      if (p.stock_birmingham > 0) m['Birmingham']  = p.stock_birmingham;
-      setStockByCity(m);
-    } else {
-      setStockByCity(existing);
-    }
-    setImageFile(null);
-    setImagePreview(imgSrc(p.image) || '');
+    setStockByCity(existing);
+    setImageFiles([]);
+    const existingImages = p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
+    setImagePreviews(existingImages.map(imgSrc).filter(Boolean));
     if (fileRef.current) fileRef.current.value = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const cancelEdit = () => {
     setEditing(null); setForm(EMPTY); setStockByCity({});
-    setImageFile(null); setImagePreview('');
+    setImageFiles([]); setImagePreviews([]);
     if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const handleImageChange = e => {
+    const files = Array.from(e.target.files);
+    if (files.length > 5) { flash(false, 'Maximum 5 images allowed.'); return; }
+    setImageFiles(files);
+    setImagePreviews(files.map(f => URL.createObjectURL(f)));
+  };
+
+  const removePreview = idx => {
+    setImageFiles(prev => prev.filter((_, i) => i !== idx));
+    setImagePreviews(prev => prev.filter((_, i) => i !== idx));
   };
 
   const submit = async e => {
@@ -99,11 +105,11 @@ export default function AdminProducts() {
       data.append('badge',         form.badge || '');
       data.append('specs',         JSON.stringify(parseSpecs(form.specs)));
       data.append('stock_by_city', JSON.stringify(stockByCity));
-      if (imageFile) data.append('image_file', imageFile);
+      imageFiles.forEach(f => data.append('image_files', f));
 
       const cfg = { withCredentials: true };
       if (editing) { await axios.put(`/api/products/${editing}`, data, cfg); flash(true, 'Product updated.'); }
-      else         { await axios.post('/api/products', data, cfg);           flash(true, 'Product added.'); }
+      else         { await axios.post('/api/products', data, cfg);            flash(true, 'Product added.'); }
       cancelEdit(); load();
     } catch (error) {
       flash(false, error.response?.data?.error || 'Failed to save product.');
@@ -124,7 +130,6 @@ export default function AdminProducts() {
 
   return (
     <>
-      {/* Topbar */}
       <div className="admin-topbar" style={{ marginBottom: 20 }}>
         <span className="page-title">{editing ? 'Edit Product' : 'Products'}</span>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -133,33 +138,29 @@ export default function AdminProducts() {
         </div>
       </div>
 
-      {/* Summary cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
         {[
           { label: 'Total Products', value: products.length,      color: '#2ecc71' },
           { label: 'Total Stock',    value: `${totalStock} units`, color: '#3498db' },
           { label: 'Stock Value',    value: `£${totalValue.toLocaleString('en-GB', { maximumFractionDigits: 0 })}`, color: '#9b59b6' },
         ].map(s => (
-          <div key={s.label} style={{ background: '#1a1a2e', borderRadius: 10, padding: '12px 18px', border: `1px solid ${s.color}44`, flex: 1 }}>
+          <div key={s.label} style={{ background: '#1a1a2e', borderRadius: 10, padding: '12px 18px', border: `1px solid ${s.color}44` }}>
             <div style={{ color: s.color, fontSize: '1.5rem', fontWeight: 700 }}>{s.value}</div>
             <div style={{ color: '#888', fontSize: '0.8rem' }}>{s.label}</div>
           </div>
         ))}
       </div>
 
-      {/* ── Form ── */}
       <div style={{ background: '#1a1a2e', borderRadius: 14, padding: 24, marginBottom: 28, border: '1px solid #2a2a4a' }}>
         <h3 style={{ color: '#fff', margin: '0 0 20px' }}>{editing ? 'Edit Product' : 'Add New Product'}</h3>
         <form onSubmit={submit}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '0 20px' }}>
 
-            {/* Name */}
             <div style={{ marginBottom: 14 }}>
               <label style={lbl}>Product Name *</label>
               <input style={inp} type="text" value={form.name} onChange={set('name')} placeholder="e.g. Lightning Pro X1" required />
             </div>
 
-            {/* Category */}
             <div style={{ marginBottom: 14 }}>
               <label style={lbl}>Category *</label>
               <select style={inp} value={form.category} onChange={set('category')}>
@@ -170,19 +171,16 @@ export default function AdminProducts() {
               </select>
             </div>
 
-            {/* Sale Price */}
             <div style={{ marginBottom: 14 }}>
               <label style={lbl}>Sale Price (£) *</label>
               <input style={inp} type="number" step="0.01" min="0" value={form.price} onChange={set('price')} placeholder="299.99" required />
             </div>
 
-            {/* Cost Price */}
             <div style={{ marginBottom: 14 }}>
               <label style={lbl}>Cost Price (£)</label>
               <input style={inp} type="number" step="0.01" min="0" value={form.cost_price} onChange={set('cost_price')} placeholder="180.00" />
             </div>
 
-            {/* Badge */}
             <div style={{ marginBottom: 14 }}>
               <label style={lbl}>Badge</label>
               <select style={inp} value={form.badge} onChange={set('badge')}>
@@ -193,7 +191,6 @@ export default function AdminProducts() {
               </select>
             </div>
 
-            {/* Primary City */}
             <div style={{ marginBottom: 14 }}>
               <label style={lbl}>Primary City</label>
               <select style={inp} value={form.city} onChange={set('city')}>
@@ -202,7 +199,6 @@ export default function AdminProducts() {
               </select>
             </div>
 
-            {/* Stock by City — full width */}
             <div style={{ marginBottom: 14, gridColumn: '1 / -1' }}>
               <label style={lbl}>Stock by City</label>
               {cities.length === 0 ? (
@@ -229,41 +225,46 @@ export default function AdminProducts() {
               )}
             </div>
 
-            {/* Image — full width */}
+            {/* Multiple Images */}
             <div style={{ marginBottom: 14, gridColumn: '1 / -1' }}>
-              <label style={lbl}>Product Image</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ width: 80, height: 80, borderRadius: 10, overflow: 'hidden', border: '1px dashed #3a3a5a', background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {imagePreview
-                    ? <img src={imagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setImagePreview('')} />
-                    : <span style={{ fontSize: 28, color: '#444' }}>🖼</span>}
-                </div>
-                <div>
-                  <input ref={fileRef} type="file" accept="image/*" id="img-upload"
-                    onChange={e => { const f = e.target.files[0]; if (f) { setImageFile(f); setImagePreview(URL.createObjectURL(f)); } }}
-                    style={{ display: 'none' }} />
-                  <label htmlFor="img-upload" style={{ display: 'inline-block', padding: '8px 16px', background: '#0f3460', color: '#5dade2', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #1a4a80' }}>
-                    {imageFile ? '✓ ' + imageFile.name : 'Choose Image'}
-                  </label>
-                  <p style={{ color: '#555', fontSize: '0.75rem', marginTop: 5, marginBottom: 0 }}>JPG, PNG, WebP — max 5MB</p>
-                </div>
+              <label style={lbl}>Product Images (up to 5)</label>
+              <div>
+                <input ref={fileRef} type="file" accept="image/*" id="img-upload" multiple
+                  onChange={handleImageChange} style={{ display: 'none' }} />
+                <label htmlFor="img-upload" style={{ display: 'inline-block', padding: '8px 16px', background: '#0f3460', color: '#5dade2', borderRadius: 8, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #1a4a80' }}>
+                  {imageFiles.length > 0 ? `✓ ${imageFiles.length} image(s) selected` : 'Choose Images'}
+                </label>
+                <p style={{ color: '#555', fontSize: '0.75rem', marginTop: 5 }}>JPG, PNG, WebP — max 5MB each — up to 5 images</p>
               </div>
+              {imagePreviews.length > 0 && (
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 10 }}>
+                  {imagePreviews.map((src, idx) => (
+                    <div key={idx} style={{ position: 'relative', width: 80, height: 80 }}>
+                      <img src={src} alt={`preview ${idx}`} style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, border: '1px solid #3a3a5a' }} />
+                      {imageFiles.length > 0 && (
+                        <button type="button" onClick={() => removePreview(idx)}
+                          style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#e74c3c', border: 'none', color: '#fff', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Description — full width */}
             <div style={{ marginBottom: 14, gridColumn: '1 / -1' }}>
               <label style={lbl}>Description</label>
               <textarea style={{ ...inp, height: 70, resize: 'vertical' }} value={form.description} onChange={set('description')} placeholder="Short product description..." />
             </div>
 
-            {/* Specs — full width */}
             <div style={{ marginBottom: 14, gridColumn: '1 / -1' }}>
               <label style={lbl}>Specs (one per line: Key:Value)</label>
               <textarea style={{ ...inp, height: 100, resize: 'vertical' }} value={form.specs} onChange={set('specs')}
                 placeholder={'Top Speed:25 km/h\nRange:35 km\nMotor:350W\nBattery:36V 10Ah\nWeight:12 kg'} />
             </div>
 
-          </div>{/* end grid */}
+          </div>
 
           <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
             <button type="submit" disabled={saving} style={{ padding: '11px 28px', background: saving ? '#1a5c35' : '#2ecc71', border: 'none', color: '#000', fontWeight: 700, borderRadius: 8, cursor: saving ? 'not-allowed' : 'pointer', fontSize: '0.95rem' }}>
@@ -278,7 +279,6 @@ export default function AdminProducts() {
         </form>
       </div>
 
-      {/* ── Products list ── */}
       <div style={{ marginBottom: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h3 style={{ color: '#fff', margin: 0 }}>All Products <span style={{ color: '#555', fontWeight: 400, fontSize: '0.85rem' }}>({products.length})</span></h3>
@@ -290,7 +290,8 @@ export default function AdminProducts() {
             const byCity = (p.stock_by_city && typeof p.stock_by_city === 'object') ? p.stock_by_city : {};
             const total  = p.stock || Object.values(byCity).reduce((s, v) => s + (Number(v) || 0), 0);
             const citySummary = Object.entries(byCity).filter(([, v]) => Number(v) > 0).map(([c, v]) => `${c}: ${v}`).join(', ');
-            const src = imgSrc(p.image);
+            const allImages = p.images && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
+            const src = allImages[0] ? imgSrc(allImages[0]) : null;
             return (
               <div key={p._id} style={{ background: '#1a1a2e', borderRadius: 12, border: '1px solid #2a2a4a', padding: '14px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
                 <div style={{ width: 60, height: 60, borderRadius: 10, overflow: 'hidden', background: '#111', border: '1px solid #2a2a4a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -302,6 +303,7 @@ export default function AdminProducts() {
                     <div>
                       <div style={{ color: '#fff', fontWeight: 700, fontSize: '0.95rem' }}>{p.name}</div>
                       <div style={{ color: '#888', fontSize: '0.78rem', marginTop: 2 }}>{p.category}{p.city ? ` · ${p.city}` : ''}{p.badge ? ` · ${p.badge}` : ''}</div>
+                      {allImages.length > 1 && <div style={{ color: '#5dade2', fontSize: '0.7rem', marginTop: 2 }}>📷 {allImages.length} images</div>}
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
                       <div style={{ color: total === 0 ? '#e74c3c' : total <= 5 ? '#f39c12' : '#2ecc71', fontWeight: 800, fontSize: '1.1rem' }}>{total}</div>
