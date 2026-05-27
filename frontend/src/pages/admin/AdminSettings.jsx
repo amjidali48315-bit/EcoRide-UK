@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from '../../axiosConfig';
+import { useAdmin } from '../../context/AdminContext';
 
 const DEFAULTS = {
   banner_title:    'Premium Ride. Local UK Delivery.',
@@ -59,6 +60,8 @@ function ExpiryPreview({ dateStr }) {
 }
 
 export default function AdminSettings() {
+  const { updateAdmin } = useAdmin();
+
   // ── Site settings ──────────────────────────────────────────────────────
   const [form, setForm]         = useState(DEFAULTS);
   const [settingsLoading, setSL] = useState(true);
@@ -89,17 +92,23 @@ export default function AdminSettings() {
     if (!unForm.current_password)    { setUnErr('Please enter your current password.'); return; }
     setUnSaving(true);
     try {
+      const token = localStorage.getItem('admin_token');
       const r = await axios.put('/api/admin/change-username', {
         new_username:     unForm.new_username.trim(),
         current_password: unForm.current_password,
-      }, { withCredentials: true });
-      setUnMsg('Username changed! Please log out and log in again with your new username.');
+      }, {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setUnMsg('✓ Username changed successfully! Your new username is: ' + r.data.username);
       setUnForm({ new_username: '', current_password: '' });
-      if (r.data.token) localStorage.setItem('admin_token', r.data.token);
-      setTimeout(() => { setUnMsg(''); }, 6000);
+      if (r.data.token) {
+        localStorage.setItem('admin_token', r.data.token);
+        axios.defaults.headers.common['Authorization'] = `Bearer ${r.data.token}`;
+        updateAdmin({ token: r.data.token, username: r.data.username });
+      }
     } catch (err) {
-      setUnErr(err.response?.data?.error || 'Failed to change username.');
-      setTimeout(() => { setUnErr(''); }, 5000);
+      setUnErr('✕ ' + (err.response?.data?.error || 'Failed to change username.'));
     } finally { setUnSaving(false); }
   };
 
@@ -120,17 +129,20 @@ export default function AdminSettings() {
 
     setPwSaving(true);
     try {
+      const token = localStorage.getItem('admin_token');
       await axios.put('/api/admin/change-password', {
         current_password: pwForm.current_password,
         new_password:     pwForm.new_password,
-      }, { withCredentials: true });
+      }, {
+        withCredentials: true,
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
       setPwMsg('Password changed successfully.');
       setPwForm({ current_password: '', new_password: '', confirm_password: '' });
     } catch (err) {
       setPwErr(err.response?.data?.error || 'Failed to change password.');
     } finally {
       setPwSaving(false);
-      setTimeout(() => { setPwMsg(''); setPwErr(''); }, 4000);
     }
   };
 
